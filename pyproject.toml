@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "credit-risk-prediction-mlops"
+version = "0.1.0"
+description = "Production-ready Credit Risk Prediction System using MLOps"
+requires-python = ">=3.11"
+authors = [
+    { name = "Lovekush Kumar" }
+]
