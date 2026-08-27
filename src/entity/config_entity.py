@@ -54,24 +54,14 @@ class ModelTrainerArtifact:
     f1_score: float
 
 
-
-@dataclass(frozen=True)
+@dataclass
 class ModelEvaluationConfig:
-    """
-    Configuration required for model evaluation.
-    """
-
-    root_dir: Path
-    trained_model_path: Path
     minimum_f1_score: float
+    evaluation_metrics_path: Path
 
 
-@dataclass(frozen=True)
+@dataclass
 class ModelEvaluationArtifact:
-    """
-    Stores the result of model evaluation.
-    """
-
     is_model_accepted: bool
     f1_score: float
     minimum_f1_score: float
@@ -86,3 +76,14 @@ class ModelExperimentConfig:
     root_dir: Path
     train_data_path: Path
     test_data_path: Path
+    best_model_path: Path
+
+@dataclass(frozen=True)
+class ModelExperimentArtifact:
+    """
+    Stores the final output of model experimentation.
+    """
+
+    best_model_name: str
+    best_model_f1_score: float
+    best_model_path: Path

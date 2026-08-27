@@ -1,0 +1,87 @@
+stages:
+
+  data_ingestion:
+    cmd: python -m src.pipeline.stage_01_data_ingestion
+
+    deps:
+      - src/pipeline/stage_01_data_ingestion.py
+      - src/components/data_ingestion.py
+      - config/config.yaml
+      - data/credit_risk.csv
+
+    outs:
+      - artifacts/data_ingestion/credit_risk.csv
+
+
+  data_validation:
+    cmd: python -m src.pipeline.stage_02_data_validation
+
+    deps:
+      - src/pipeline/stage_02_data_validation.py
+      - src/components/data_validation.py
+      - src/components/data_ingestion.py
+      - config/config.yaml
+      - artifacts/data_ingestion/credit_risk.csv
+
+    outs:
+      - artifacts/data_validation
+
+
+  data_transformation:
+    cmd: python -m src.pipeline.stage_03_data_transformation
+
+    deps:
+      - src/pipeline/stage_03_data_transformation.py
+      - src/components/data_transformation.py
+      - config/config.yaml
+      - artifacts/data_ingestion/credit_risk.csv
+      - artifacts/data_validation
+
+    outs:
+      - artifacts/data_transformation/train.csv
+      - artifacts/data_transformation/test.csv
+      - artifacts/data_transformation/preprocessor.pkl
+
+
+  model_trainer:
+    cmd: python -m src.pipeline.stage_04_model_trainer
+
+    deps:
+      - src/pipeline/stage_04_model_trainer.py
+      - src/components/model_trainer.py
+      - src/config/configuration.py
+      - config/config.yaml
+      - artifacts/data_transformation/train.csv
+      - artifacts/data_transformation/test.csv
+
+    outs:
+      - artifacts/model_training/model.pkl
+
+  model_experimentation:
+    cmd: python -m src.pipeline.stage_05_model_experimentation
+
+    deps:
+      - src/pipeline/stage_05_model_experimentation.py
+      - src/components/model_experimentation.py
+      - src/entity/config_entity.py
+      - src/config/configuration.py
+      - config/config.yaml
+      - artifacts/data_transformation/train.csv
+      - artifacts/data_transformation/test.csv
+
+    outs:
+      - artifacts/model_experimentation/best_model.pkl
+
+  model_evaluation:
+    cmd: python -m src.pipeline.stage_06_model_evaluation
+
+    deps:
+      - src/pipeline/stage_06_model_evaluation.py
+      - src/components/model_evaluation.py
+      - src/config/configuration.py
+      - src/entity/config_entity.py
+      - config/config.yaml
+      - artifacts/model_experimentation/best_model.pkl
+
+    outs:
+      - artifacts/model_evaluation/evaluation_metrics.json

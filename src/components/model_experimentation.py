@@ -1,22 +1,24 @@
 import pandas as pd
+import sys
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-from xgboost import XGBClassifier
-from sklearn.model_selection import GridSearchCV
-
-from src.entity.config_entity import ModelExperimentConfig
-from src.exception.exception import CustomException
-from src.logger.logger import logger
-
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
     recall_score,
     f1_score,
 )
+from sklearn.model_selection import GridSearchCV
+from xgboost import XGBClassifier
 
-import sys
+from src.entity.config_entity import (
+    ModelExperimentConfig,
+    ModelExperimentArtifact,
+)
+from src.exception.exception import CustomException
+from src.logger.logger import logger
+from src.utils.common import save_object
 
 
 class ModelExperimentation:
@@ -25,17 +27,16 @@ class ModelExperimentation:
         self,
         config: ModelExperimentConfig,
     ):
-        """
-        Initialize ModelExperimentation with configuration.
-        """
         self.config = config
-
     def load_data(self):
         """
         Load transformed training and testing datasets.
         """
+
         try:
-            logger.info("Loading experimentation training data")
+            logger.info(
+                "Loading experimentation training data"
+            )
 
             train_df = pd.read_csv(
                 self.config.train_data_path
@@ -46,7 +47,9 @@ class ModelExperimentation:
                 f"{train_df.shape}"
             )
 
-            logger.info("Loading experimentation testing data")
+            logger.info(
+                "Loading experimentation testing data"
+            )
 
             test_df = pd.read_csv(
                 self.config.test_data_path
@@ -60,6 +63,7 @@ class ModelExperimentation:
             return train_df, test_df
 
         except Exception as e:
+
             logger.exception(
                 "Failed to load experimentation data"
             )
@@ -67,15 +71,16 @@ class ModelExperimentation:
             raise CustomException(e, sys)
 
     def prepare_data(
-        self,
-        train_df: pd.DataFrame,
-        test_df: pd.DataFrame,
+    self,
+    train_df,
+    test_df,
     ):
         """
         Separate input features and target variable
         for model experimentation.
         """
         try:
+
             logger.info(
                 "Preparing data for model experimentation"
             )
@@ -108,9 +113,15 @@ class ModelExperimentation:
                 f"Experiment y_test shape: {y_test.shape}"
             )
 
-            return X_train, y_train, X_test, y_test
+            return (
+                X_train,
+                y_train,
+                X_test,
+                y_test,
+            )
 
         except Exception as e:
+
             logger.exception(
                 "Failed to prepare experimentation data"
             )
@@ -119,12 +130,16 @@ class ModelExperimentation:
 
     def get_models(self):
         """
-        Define candidate models for experimentation.
+        Define candidate baseline models for experimentation.
         """
         try:
-            logger.info("Defining candidate models")
+
+            logger.info(
+                "Defining candidate baseline models"
+            )
 
             models = {
+
                 "Logistic Regression": LogisticRegression(
                     max_iter=1000,
                     random_state=42,
@@ -148,28 +163,33 @@ class ModelExperimentation:
             return models
 
         except Exception as e:
+
             logger.exception(
                 "Failed to define candidate models"
             )
 
-            raise CustomException(e, sys)
+        raise CustomException(e, sys)
 
     def train_and_evaluate_models(
-        self,
-        models,
-        X_train,
-        y_train,
-        X_test,
-        y_test,
+    self,
+    models,
+    X_train,
+    y_train,
+    X_test,
+    y_test,
     ):
         """
-        Train all candidate models and evaluate them
-        on the testing dataset.
+        Train all candidate baseline models and evaluate
+        them on the unseen testing dataset.
         """
         try:
-            logger.info("Model experimentation started")
+
+            logger.info(
+                "Baseline model experimentation started"
+            )
 
             model_results = {}
+            trained_models = {}
 
             for model_name, model in models.items():
 
@@ -177,17 +197,22 @@ class ModelExperimentation:
                     f"Training model: {model_name}"
                 )
 
-                # Train model on training data
-                model.fit(X_train, y_train)
+                # Train the model
+                model.fit(
+                    X_train,
+                    y_train,
+                )
 
                 logger.info(
                     f"Training completed: {model_name}"
                 )
 
-                # Make predictions on unseen test data
-                y_pred = model.predict(X_test)
+                # Predict on unseen test data
+                y_pred = model.predict(
+                    X_test
+                )
 
-                # Calculate evaluation metrics
+                # Calculate metrics
                 accuracy = accuracy_score(
                     y_test,
                     y_pred,
@@ -211,6 +236,10 @@ class ModelExperimentation:
                     zero_division=0,
                 )
 
+                # Store trained model
+                trained_models[model_name] = model
+
+                # Store evaluation results
                 model_results[model_name] = {
                     "accuracy": accuracy,
                     "precision": precision,
@@ -227,29 +256,34 @@ class ModelExperimentation:
                 )
 
             logger.info(
-                "Model experimentation completed"
+                "Baseline model experimentation completed"
             )
 
-            return model_results
+            return (
+                trained_models,
+                model_results,
+            )
 
         except Exception as e:
+
             logger.exception(
                 "Model experimentation failed"
             )
 
             raise CustomException(e, sys)
 
-
     def select_best_model(
     self,
     model_results,
     ):
         """
-        Select the best model based on the highest F1-score.
+        Select the best baseline model based on
+        the highest F1-score.
         """
         try:
+
             logger.info(
-                "Selecting best model based on F1-score"
+                "Selecting best baseline model based on F1-score"
             )
 
             best_model_name = max(
@@ -264,18 +298,24 @@ class ModelExperimentation:
             ]["f1_score"]
 
             logger.info(
-                f"Best model selected: {best_model_name}"
+                f"Best baseline model selected: "
+                f"{best_model_name}"
             )
 
             logger.info(
-                f"Best F1-score: {best_f1_score:.4f}"
+                f"Best baseline F1-score: "
+                f"{best_f1_score:.4f}"
             )
 
-            return best_model_name, best_f1_score
+            return (
+                best_model_name,
+                best_f1_score,
+            )
 
         except Exception as e:
+
             logger.exception(
-                "Best model selection failed"
+                "Best baseline model selection failed"
             )
 
             raise CustomException(e, sys)
@@ -286,6 +326,7 @@ class ModelExperimentation:
         for the XGBoost model.
         """
         try:
+
             logger.info(
                 "Defining XGBoost hyperparameter grid"
             )
@@ -304,6 +345,7 @@ class ModelExperimentation:
             return param_grid
 
         except Exception as e:
+
             logger.exception(
                 "Failed to define XGBoost parameter grid"
             )
@@ -320,6 +362,7 @@ class ModelExperimentation:
         and return the best trained model.
         """
         try:
+
             logger.info(
                 "XGBoost hyperparameter tuning started"
             )
@@ -374,6 +417,7 @@ class ModelExperimentation:
             )
 
         except Exception as e:
+
             logger.exception(
                 "XGBoost hyperparameter tuning failed"
             )
@@ -381,15 +425,17 @@ class ModelExperimentation:
             raise CustomException(e, sys)
 
     def evaluate_tuned_model(
-        self,
-        best_model,
-        X_test,
-        y_test,
+    self,
+    best_model,
+    X_test,
+    y_test,
     ):
         """
-        Evaluate the best tuned model on unseen test data.
+        Evaluate the best tuned model on
+        unseen test data.
         """
         try:
+
             logger.info(
                 "Tuned model evaluation started"
             )
@@ -398,7 +444,9 @@ class ModelExperimentation:
                 "Generating predictions using tuned model"
             )
 
-            y_pred = best_model.predict(X_test)
+            y_pred = best_model.predict(
+                X_test
+            )
 
             accuracy = accuracy_score(
                 y_test,
@@ -408,16 +456,19 @@ class ModelExperimentation:
             precision = precision_score(
                 y_test,
                 y_pred,
+                zero_division=0,
             )
 
             recall = recall_score(
                 y_test,
                 y_pred,
+                zero_division=0,
             )
 
             f1 = f1_score(
                 y_test,
                 y_pred,
+                zero_division=0,
             )
 
             logger.info(
@@ -448,6 +499,7 @@ class ModelExperimentation:
             }
 
         except Exception as e:
+
             logger.exception(
                 "Tuned model evaluation failed"
             )
@@ -456,44 +508,44 @@ class ModelExperimentation:
 
     def select_final_model(
     self,
-    baseline_model,
-    baseline_metrics,
+    trained_models,
+    model_results,
     tuned_model,
     tuned_metrics,
     ):
         """
-        Compare baseline and tuned models and select
-        the final model based on F1-score.
+        Compare all baseline models and the tuned XGBoost
+        model, then select the model with the highest
+        F1-score.
         """
         try:
+
             logger.info(
                 "Final model selection started"
             )
 
-            baseline_f1 = baseline_metrics["f1_score"]
-            tuned_f1 = tuned_metrics["f1_score"]
+            trained_models[
+                "Tuned XGBoost"
+            ] = tuned_model
 
-            logger.info(
-                f"Baseline model F1-score: "
-                f"{baseline_f1:.4f}"
+            model_results[
+                "Tuned XGBoost"
+            ] = tuned_metrics
+
+            final_model_name = max(
+                model_results,
+                key=lambda model_name: model_results[
+                    model_name
+                ]["f1_score"],
             )
 
-            logger.info(
-                f"Tuned model F1-score: "
-                f"{tuned_f1:.4f}"
-            )
+            final_model = trained_models[
+                final_model_name
+            ]
 
-            if tuned_f1 > baseline_f1:
-
-                final_model = tuned_model
-                final_model_name = "Tuned XGBoost"
-                final_metrics = tuned_metrics
-
-            else:
-
-                final_model = baseline_model
-                final_model_name = "Baseline XGBoost"
-                final_metrics = baseline_metrics
+            final_metrics = model_results[
+                final_model_name
+            ]
 
             logger.info(
                 f"Final model selected: "
@@ -501,7 +553,22 @@ class ModelExperimentation:
             )
 
             logger.info(
-                f"Final model F1-score: "
+                f"Final Accuracy: "
+                f"{final_metrics['accuracy']:.4f}"
+            )
+
+            logger.info(
+                f"Final Precision: "
+                f"{final_metrics['precision']:.4f}"
+            )
+
+            logger.info(
+                f"Final Recall: "
+                f"{final_metrics['recall']:.4f}"
+            )
+
+            logger.info(
+                f"Final F1-score: "
                 f"{final_metrics['f1_score']:.4f}"
             )
 
@@ -519,6 +586,138 @@ class ModelExperimentation:
 
             logger.exception(
                 "Final model selection failed"
+            )
+
+            raise CustomException(e, sys)
+
+    def initiate_model_experimentation(self):
+        """
+        Run the complete model experimentation workflow,
+        select the best model, save it, and return the
+        final experimentation artifact.
+        """
+        try:
+
+            logger.info(
+                "Model Experimentation Pipeline Started"
+            )
+
+            # Step 1: Load transformed datasets
+            train_df, test_df = self.load_data()
+
+            # Step 2: Separate features and target
+            (
+                X_train,
+                y_train,
+                X_test,
+                y_test,
+            ) = self.prepare_data(
+                train_df,
+                test_df,
+            )
+
+            # Step 3: Define baseline candidate models
+            models = self.get_models()
+
+            # Step 4: Train and evaluate baseline models
+            (
+                trained_models,
+                model_results,
+            ) = self.train_and_evaluate_models(
+                models,
+                X_train,
+                y_train,
+                X_test,
+                y_test,
+            )
+
+            # Step 5: Find best baseline model
+            (
+                best_baseline_model_name,
+                best_baseline_f1_score,
+            ) = self.select_best_model(
+                model_results
+            )
+
+            logger.info(
+                f"Best baseline model: "
+                f"{best_baseline_model_name}"
+            )
+
+            logger.info(
+                f"Best baseline F1-score: "
+                f"{best_baseline_f1_score:.4f}"
+            )
+
+            # Step 6: Tune XGBoost
+            (
+                tuned_xgboost_model,
+                best_params,
+                best_cv_score,
+            ) = self.tune_xgboost_model(
+                X_train,
+                y_train,
+            )
+
+            # Step 7: Evaluate tuned XGBoost
+            tuned_metrics = self.evaluate_tuned_model(
+                tuned_xgboost_model,
+                X_test,
+                y_test,
+            )
+
+            # Step 8: Compare all models
+            (
+                final_model,
+                final_model_name,
+                final_metrics,
+            ) = self.select_final_model(
+                trained_models,
+                model_results,
+                tuned_xgboost_model,
+                tuned_metrics,
+            )
+
+            # Step 9: Save final best model
+            logger.info(
+                "Saving final best model"
+            )
+
+            save_object(
+                self.config.best_model_path,
+                final_model,
+            )
+
+            logger.info(
+                f"Best model saved at: "
+                f"{self.config.best_model_path}"
+            )
+
+            # Step 10: Create artifact
+            model_experiment_artifact = (
+                ModelExperimentArtifact(
+                    best_model_name=final_model_name,
+                    best_model_f1_score=final_metrics[
+                        "f1_score"
+                    ],
+                    best_model_path=self.config.best_model_path,
+                )
+            )
+
+            logger.info(
+                "Model Experiment Artifact created successfully"
+            )
+
+            logger.info(
+                "Model Experimentation Pipeline Completed"
+            )
+
+            return model_experiment_artifact
+
+        except Exception as e:
+
+            logger.exception(
+                "Model Experimentation Pipeline failed"
             )
 
             raise CustomException(e, sys)

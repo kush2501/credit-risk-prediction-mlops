@@ -13,8 +13,8 @@ from src.entity.config_entity import (
     DataValidationConfig,
     DataTransformationConfig, 
     ModelTrainerConfig,
-    ModelEvaluationConfig,
     ModelExperimentConfig,
+    ModelEvaluationConfig,
 )
 
 
@@ -43,66 +43,131 @@ class ConfigurationManager:
             STATUS_FILE=config["STATUS_FILE"]
         )
 
-    def get_data_transformation_config(self) -> DataTransformationConfig:
+    def get_data_transformation_config(self):
+
         config = self.config["data_transformation"]
 
-        return DataTransformationConfig(
-            root_dir=Path(config["root_dir"]),
-            data_path=Path(config["data_path"]),
-            train_data_path=Path(config["train_data_path"]),
-            test_data_path=Path(config["test_data_path"]),
-            preprocessor_path=Path(config["preprocessor_path"]),
+        create_directories([
+            config["root_dir"]
+        ])
+
+        data_transformation_config = (
+            DataTransformationConfig(
+
+                root_dir=Path(
+                    config["root_dir"]
+                ),
+
+                data_path=Path(
+                    config["data_path"]
+                ),
+
+                train_data_path=Path(
+                    config["train_data_path"]
+                ),
+
+                test_data_path=Path(
+                    config["test_data_path"]
+                ),
+
+                preprocessor_path=Path(
+                    config["preprocessor_path"]
+                ),
+            )
         )
 
+        return data_transformation_config
+
     def get_model_trainer_config(self) -> ModelTrainerConfig:
+
         config = self.config["model_trainer"]
 
+        create_directories([
+            config["root_dir"]
+        ])
 
         return ModelTrainerConfig(
-            root_dir=Path(config["root_dir"]),  
+
+            root_dir=Path(config["root_dir"]),
+
             trained_model_path=Path(
                 config["trained_model_path"]
             ),
+
         )
 
-    def get_model_evaluation_config(self) -> ModelEvaluationConfig:
+    def get_model_evaluation_config(
+    self,
+    ) -> ModelEvaluationConfig:
         """
-        Create and return the configuration required
-        for model evaluation.
+        Create and return the Model Evaluation configuration.
         """
+
         try:
-            config = self.config["model_evaluation"]
 
-            create_directories([config["root_dir"]])
+            config = self.config['model_evaluation']
 
-            model_evaluation_config = ModelEvaluationConfig(
-                root_dir=Path(config["root_dir"]),
-                trained_model_path=Path(config["trained_model_path"]),
-                minimum_f1_score=float(config["minimum_f1_score"]),
+            model_evaluation_config = (
+                ModelEvaluationConfig(
+
+                    minimum_f1_score=float(
+                        config['minimum_f1_score']
+                    ),
+
+                    evaluation_metrics_path=Path(
+                    config["evaluation_metrics_path"]
+                    ),
+                )
             )
 
             return model_evaluation_config
 
         except Exception as e:
             raise CustomException(e, sys)
+        
 
-    def get_model_experiment_config(self) -> ModelExperimentConfig:
+    def get_model_experiment_config(
+    self,
+    ) -> ModelExperimentConfig:
+
         """
         Create and return the configuration required
         for model experimentation.
         """
+
         try:
-            config = self.config["model_experimentation"]
 
-            create_directories([config["root_dir"]])
+            config = self.config[
+                "model_experimentation"
+            ]
 
-            model_experiment_config = ModelExperimentConfig(
-                root_dir=Path(config["root_dir"]),
-                train_data_path=Path(config["train_data_path"]),
-                test_data_path=Path(config["test_data_path"]),
+            create_directories([
+                config["root_dir"]
+            ])
+
+            model_experiment_config = (
+                ModelExperimentConfig(
+
+                    root_dir=Path(
+                        config["root_dir"]
+                    ),
+
+                    train_data_path=Path(
+                        config["train_data_path"]
+                    ),
+
+                    test_data_path=Path(
+                        config["test_data_path"]
+                    ),
+
+                    best_model_path=Path(
+                        config["best_model_path"]
+                    ),
+                )
             )
 
             return model_experiment_config
 
         except Exception as e:
+
             raise CustomException(e, sys)

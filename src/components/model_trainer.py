@@ -322,7 +322,7 @@ class ModelTrainer:
             )
 
             # Calculate confusion matrix.
-            confusion_matrix_result = self.calculate_confusion_matrix(
+            confusion_matrix_result = self.get_confusion_matrix(
                 y_test,
                 y_pred,
             )

@@ -21,11 +21,12 @@ model_trainer:
   trained_model_path: artifacts/model_training/model.pkl
 
 model_evaluation:
-  root_dir: artifacts/model_evaluation
-  trained_model_path: artifacts/model_training/model.pkl
   minimum_f1_score: 0.80
-
+  evaluation_metrics_path: artifacts/model_evaluation/evaluation_metrics.json
+  
 model_experimentation:
   root_dir: artifacts/model_experimentation
   train_data_path: artifacts/data_transformation/train.csv
   test_data_path: artifacts/data_transformation/test.csv
+  best_model_path: artifacts/model_experimentation/best_model.pkl
+
