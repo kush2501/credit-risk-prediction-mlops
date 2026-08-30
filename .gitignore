@@ -28,3 +28,7 @@ artifacts/
 # OS Files
 .DS_Store
 Thumbs.db
+
+# MLflow local tracking
+mlflow.db
+mlruns/

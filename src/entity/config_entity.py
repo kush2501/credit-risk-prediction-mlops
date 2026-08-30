@@ -87,3 +87,15 @@ class ModelExperimentArtifact:
     best_model_name: str
     best_model_f1_score: float
     best_model_path: Path
+    mlflow_model_uri: str
+
+@dataclass(frozen=True)
+class ModelRegistryConfig:
+    """
+    Configuration required for model registration.
+    """
+
+    root_dir: Path
+    model_name: str
+    mlflow_model_uri_path: Path
+    evaluation_metrics_path: Path

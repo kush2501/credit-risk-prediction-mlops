@@ -1,5 +1,9 @@
 import pandas as pd
 import sys
+import json 
+import mlflow
+import mlflow.xgboost
+
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
@@ -179,8 +183,8 @@ class ModelExperimentation:
     y_test,
     ):
         """
-        Train all candidate baseline models and evaluate
-        them on the unseen testing dataset.
+        Train all candidate baseline models, evaluate them,
+        and log their parameters and metrics to MLflow.
         """
         try:
 
@@ -194,66 +198,113 @@ class ModelExperimentation:
             for model_name, model in models.items():
 
                 logger.info(
-                    f"Training model: {model_name}"
+                    f"Starting MLflow run for: {model_name}"
                 )
 
-                # Train the model
-                model.fit(
-                    X_train,
-                    y_train,
-                )
+                with mlflow.start_run(
+                    run_name=model_name
+                ):
 
-                logger.info(
-                    f"Training completed: {model_name}"
-                )
+                    # -----------------------------
+                    # Log model information
+                    # -----------------------------
 
-                # Predict on unseen test data
-                y_pred = model.predict(
-                    X_test
-                )
+                    mlflow.log_param(
+                        "model",
+                        model_name
+                    )
 
-                # Calculate metrics
-                accuracy = accuracy_score(
-                    y_test,
-                    y_pred,
-                )
+                    mlflow.log_params(
+                        model.get_params()
+                    )
 
-                precision = precision_score(
-                    y_test,
-                    y_pred,
-                    zero_division=0,
-                )
+                    logger.info(
+                        f"Training model: {model_name}"
+                    )
 
-                recall = recall_score(
-                    y_test,
-                    y_pred,
-                    zero_division=0,
-                )
+                    # -----------------------------
+                    # Train model
+                    # -----------------------------
 
-                f1 = f1_score(
-                    y_test,
-                    y_pred,
-                    zero_division=0,
-                )
+                    model.fit(
+                        X_train,
+                        y_train,
+                    )
 
-                # Store trained model
-                trained_models[model_name] = model
+                    logger.info(
+                        f"Training completed: {model_name}"
+                    )
 
-                # Store evaluation results
-                model_results[model_name] = {
-                    "accuracy": accuracy,
-                    "precision": precision,
-                    "recall": recall,
-                    "f1_score": f1,
-                }
+                    # -----------------------------
+                    # Prediction
+                    # -----------------------------
 
-                logger.info(
-                    f"{model_name} results - "
-                    f"Accuracy: {accuracy:.4f}, "
-                    f"Precision: {precision:.4f}, "
-                    f"Recall: {recall:.4f}, "
-                    f"F1: {f1:.4f}"
-                )
+                    y_pred = model.predict(
+                        X_test
+                    )
+
+                    # -----------------------------
+                    # Calculate metrics
+                    # -----------------------------
+
+                    accuracy = accuracy_score(
+                        y_test,
+                        y_pred,
+                    )
+
+                    precision = precision_score(
+                        y_test,
+                        y_pred,
+                        zero_division=0,
+                    )
+
+                    recall = recall_score(
+                        y_test,
+                        y_pred,
+                        zero_division=0,
+                    )
+
+                    f1 = f1_score(
+                        y_test,
+                        y_pred,
+                        zero_division=0,
+                    )
+
+                    # -----------------------------
+                    # Log metrics to MLflow
+                    # -----------------------------
+
+                    mlflow.log_metrics({
+                        "accuracy": accuracy,
+                        "precision": precision,
+                        "recall": recall,
+                        "f1_score": f1,
+                    })
+
+                    # -----------------------------
+                    # Store trained model
+                    # -----------------------------
+
+                    trained_models[model_name] = model
+
+                    model_results[model_name] = {
+                        "accuracy": accuracy,
+                        "precision": precision,
+                        "recall": recall,
+                        "f1_score": f1,
+                    }
+
+                    logger.info(
+                        f"{model_name} results - "
+                        f"Accuracy: {accuracy:.4f}, "
+                        f"Precision: {precision:.4f}, "
+                        f"Recall: {recall:.4f}, "
+                        f"F1: {f1:.4f}"
+                    )
+
+                    logger.info(
+                        f"MLflow run completed: {model_name}"
+                    )
 
             logger.info(
                 "Baseline model experimentation completed"
@@ -590,22 +641,34 @@ class ModelExperimentation:
 
             raise CustomException(e, sys)
 
+
     def initiate_model_experimentation(self):
         """
         Run the complete model experimentation workflow,
-        select the best model, save it, and return the
-        final experimentation artifact.
+        select the best model, log the final model to MLflow,
+        save it locally, and return the final experimentation artifact.
         """
+
         try:
 
             logger.info(
                 "Model Experimentation Pipeline Started"
             )
 
+            mlflow.set_experiment(
+                "Credit Risk Model Experimentation"
+            )
+
+            # ==========================================================
             # Step 1: Load transformed datasets
+            # ==========================================================
+
             train_df, test_df = self.load_data()
 
+            # ==========================================================
             # Step 2: Separate features and target
+            # ==========================================================
+
             (
                 X_train,
                 y_train,
@@ -616,10 +679,16 @@ class ModelExperimentation:
                 test_df,
             )
 
+            # ==========================================================
             # Step 3: Define baseline candidate models
+            # ==========================================================
+
             models = self.get_models()
 
+            # ==========================================================
             # Step 4: Train and evaluate baseline models
+            # ==========================================================
+
             (
                 trained_models,
                 model_results,
@@ -631,7 +700,10 @@ class ModelExperimentation:
                 y_test,
             )
 
+            # ==========================================================
             # Step 5: Find best baseline model
+            # ==========================================================
+
             (
                 best_baseline_model_name,
                 best_baseline_f1_score,
@@ -649,24 +721,61 @@ class ModelExperimentation:
                 f"{best_baseline_f1_score:.4f}"
             )
 
+            # ==========================================================
             # Step 6: Tune XGBoost
-            (
-                tuned_xgboost_model,
-                best_params,
-                best_cv_score,
-            ) = self.tune_xgboost_model(
-                X_train,
-                y_train,
-            )
+            # ==========================================================
 
-            # Step 7: Evaluate tuned XGBoost
-            tuned_metrics = self.evaluate_tuned_model(
-                tuned_xgboost_model,
-                X_test,
-                y_test,
-            )
+            with mlflow.start_run(
+                run_name="Tuned XGBoost"
+            ):
 
-            # Step 8: Compare all models
+                logger.info(
+                    "Tuned XGBoost MLflow run started"
+                )
+
+                (
+                    tuned_xgboost_model,
+                    best_params,
+                    best_cv_score,
+                ) = self.tune_xgboost_model(
+                    X_train,
+                    y_train,
+                )
+
+                # Log tuned XGBoost hyperparameters
+                mlflow.log_params(
+                    best_params
+                )
+
+                # Log cross-validation score
+                mlflow.log_metric(
+                    "cv_f1_score",
+                    best_cv_score,
+                )
+
+                # Evaluate tuned XGBoost
+                tuned_metrics = self.evaluate_tuned_model(
+                    tuned_xgboost_model,
+                    X_test,
+                    y_test,
+                )
+
+                # Log tuned XGBoost test metrics
+                mlflow.log_metrics({
+                    "accuracy": tuned_metrics["accuracy"],
+                    "precision": tuned_metrics["precision"],
+                    "recall": tuned_metrics["recall"],
+                    "f1_score": tuned_metrics["f1_score"],
+                })
+
+                logger.info(
+                    "Tuned XGBoost MLflow run completed"
+                )
+
+            # ==========================================================
+            # Step 7: Compare all models
+            # ==========================================================
+
             (
                 final_model,
                 final_model_name,
@@ -678,7 +787,115 @@ class ModelExperimentation:
                 tuned_metrics,
             )
 
-            # Step 9: Save final best model
+            logger.info(
+                f"Final model selected: "
+                f"{final_model_name}"
+            )
+
+            # ==========================================================
+            # Step 8: Create separate MLflow run for final model
+            # ==========================================================
+
+            with mlflow.start_run(
+                run_name="Final Model"
+            ) as final_run:
+
+                logger.info(
+                    "Final model MLflow run started"
+                )
+
+                mlflow_model_uri = f"runs:/{final_run.info.run_id}/final_model"
+
+                # ------------------------------------------------------
+                # Log final model name
+                # ------------------------------------------------------
+
+                mlflow.log_param(
+                    "model",
+                    final_model_name,
+                )
+
+                # ------------------------------------------------------
+                # Log final model parameters
+                # ------------------------------------------------------
+
+                if final_model_name == "Logistic Regression":
+
+                    mlflow.log_params({
+                        "max_iter": final_model.max_iter,
+                        "random_state": final_model.random_state,
+                    })
+
+                elif final_model_name == "Random Forest":
+
+                    mlflow.log_params({
+                        "n_estimators": final_model.n_estimators,
+                        "max_depth": final_model.max_depth,
+                        "random_state": final_model.random_state,
+                    })
+
+                elif final_model_name == "XGBoost":
+
+                    mlflow.log_params({
+                        "n_estimators": final_model.n_estimators,
+                        "max_depth": final_model.max_depth,
+                        "learning_rate": final_model.learning_rate,
+                        "subsample": final_model.subsample,
+                        "random_state": final_model.random_state,
+                    })
+
+                # ------------------------------------------------------
+                # Log final model metrics
+                # ------------------------------------------------------
+
+                mlflow.log_metrics({
+                    "accuracy": final_metrics["accuracy"],
+                    "precision": final_metrics["precision"],
+                    "recall": final_metrics["recall"],
+                    "f1_score": final_metrics["f1_score"],
+                })
+
+                # ------------------------------------------------------
+                # Log final model using correct MLflow flavor
+                # ------------------------------------------------------
+
+                if final_model_name == "XGBoost":
+
+                    mlflow.xgboost.log_model(
+                        xgb_model=final_model,
+                        name="final_model",
+                        model_format="json",
+                    )
+
+                else:
+
+                    mlflow.sklearn.log_model(
+                        sk_model=final_model,
+                        name="final_model",
+                    )
+
+                logger.info(
+                    "Final model logged to MLflow successfully"
+                )
+
+
+            # Save MLflow model URI for the Model Registry stage
+
+                mlflow_uri_path = (
+                    self.config.root_dir / "model_uri.txt"
+                )
+
+                with open(mlflow_uri_path, "w") as file:
+                    file.write(mlflow_model_uri)
+
+                logger.info(
+                    f"MLflow model URI saved at: {mlflow_uri_path}"
+                )
+
+            # ==========================================================
+            # Step 9: Save final best model locally
+            # ==========================================================
+
             logger.info(
                 "Saving final best model"
             )
@@ -693,15 +910,38 @@ class ModelExperimentation:
                 f"{self.config.best_model_path}"
             )
 
-            # Step 10: Create artifact
+            # ==========================================================
+            # Step 10: Create experimentation artifact
+            # ==========================================================
+
             model_experiment_artifact = (
                 ModelExperimentArtifact(
                     best_model_name=final_model_name,
-                    best_model_f1_score=final_metrics[
-                        "f1_score"
-                    ],
+                    best_model_f1_score=final_metrics["f1_score"],
                     best_model_path=self.config.best_model_path,
+                    mlflow_model_uri=mlflow_model_uri,
+                    )
+            )
+
+            experiment_artifact_path = (
+                self.config.root_dir / "model_experimentation.json"
+            )
+
+            with open(experiment_artifact_path, "w") as file:
+                json.dump(
+                    {
+                        "best_model_name": model_experiment_artifact.best_model_name,
+                        "best_model_f1_score": model_experiment_artifact.best_model_f1_score,
+                        "best_model_path": str(model_experiment_artifact.best_model_path),
+                        "mlflow_model_uri": model_experiment_artifact.mlflow_model_uri,
+                    },
+                    file,
+                    indent=4,
                 )
+
+            logger.info(
+                f"Model experimentation artifact saved at: "
+                f"{experiment_artifact_path}"
             )
 
             logger.info(
@@ -710,6 +950,20 @@ class ModelExperimentation:
 
             logger.info(
                 "Model Experimentation Pipeline Completed"
+            )
+
+            logger.info(
+                f"Best model: {final_model_name}"
+            )
+
+            logger.info(
+                f"Best model F1-score: "
+                f"{final_metrics['f1_score']:.4f}"
+            )
+
+            logger.info(
+                f"Best model saved at: "
+                f"{self.config.best_model_path}"
             )
 
             return model_experiment_artifact

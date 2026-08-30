@@ -15,6 +15,7 @@ from src.entity.config_entity import (
     ModelTrainerConfig,
     ModelExperimentConfig,
     ModelEvaluationConfig,
+    ModelRegistryConfig,
 )
 
 
@@ -170,4 +171,32 @@ class ConfigurationManager:
 
         except Exception as e:
 
+            raise CustomException(e, sys)
+
+    def get_model_registry_config(self) -> ModelRegistryConfig:
+        """
+        Create and return the configuration required
+        for model registration.
+        """
+        try:
+            config = self.config["model_registry"]
+
+            create_directories([
+                config["root_dir"]
+            ])
+
+            model_registry_config = ModelRegistryConfig(
+                root_dir=Path(config["root_dir"]),
+                model_name=config["model_name"],
+                mlflow_model_uri_path=Path(
+                    config["mlflow_model_uri_path"]
+                ),
+                evaluation_metrics_path=Path(
+                    config["evaluation_metrics_path"]
+                ),
+            )
+
+            return model_registry_config
+
+        except Exception as e:
             raise CustomException(e, sys)

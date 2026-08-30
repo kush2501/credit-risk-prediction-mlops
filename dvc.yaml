@@ -71,6 +71,7 @@ stages:
 
     outs:
       - artifacts/model_experimentation/best_model.pkl
+      - artifacts/model_experimentation/model_experimentation.json
 
   model_evaluation:
     cmd: python -m src.pipeline.stage_06_model_evaluation
@@ -82,6 +83,21 @@ stages:
       - src/entity/config_entity.py
       - config/config.yaml
       - artifacts/model_experimentation/best_model.pkl
+      - artifacts/model_experimentation/model_experimentation.json
 
     outs:
       - artifacts/model_evaluation/evaluation_metrics.json
+
+  model_registry:
+      cmd: python -m src.pipeline.stage_07_model_registry
+
+      deps:
+        - src/pipeline/stage_07_model_registry.py
+        - src/components/model_registry.py
+        - src/config/configuration.py
+        - src/entity/config_entity.py
+        - config/config.yaml
+        - artifacts/model_experimentation/model_uri.txt
+        - artifacts/model_evaluation/evaluation_metrics.json
+
+      

@@ -5,8 +5,8 @@ stages:
     deps:
     - path: config/config.yaml
       hash: md5
-      md5: 18c5dd88bf4f9c850270cbe8dc91aa77
-      size: 1101
+      md5: d5ef9fb7dafdafc36a0066476f7e496d
+      size: 1338
     - path: data/credit_risk.csv
       hash: md5
       md5: 9a01768113784fa109745fd8fe031eee
@@ -33,8 +33,8 @@ stages:
       size: 1804682
     - path: config/config.yaml
       hash: md5
-      md5: 18c5dd88bf4f9c850270cbe8dc91aa77
-      size: 1101
+      md5: d5ef9fb7dafdafc36a0066476f7e496d
+      size: 1338
     - path: src/components/data_ingestion.py
       hash: md5
       md5: baeb618938a756343d22fc29198e603d
@@ -67,8 +67,8 @@ stages:
       nfiles: 1
     - path: config/config.yaml
       hash: md5
-      md5: 18c5dd88bf4f9c850270cbe8dc91aa77
-      size: 1101
+      md5: d5ef9fb7dafdafc36a0066476f7e496d
+      size: 1338
     - path: src/components/data_transformation.py
       hash: md5
       md5: 6d7e65b42d98604c4f2710660310aeb3
@@ -103,16 +103,16 @@ stages:
       size: 4941090
     - path: config/config.yaml
       hash: md5
-      md5: 18c5dd88bf4f9c850270cbe8dc91aa77
-      size: 1101
+      md5: d5ef9fb7dafdafc36a0066476f7e496d
+      size: 1338
     - path: src/components/model_trainer.py
       hash: md5
       md5: 25e07e06bcba7c571e83a7f1bc3700a0
       size: 9636
     - path: src/config/configuration.py
       hash: md5
-      md5: 7f14d156516dafce3ca6d1fe406b1d13
-      size: 4155
+      md5: 0fe2be647d85d9372a7322516a7a17f8
+      size: 5053
     - path: src/pipeline/stage_04_model_trainer.py
       hash: md5
       md5: 5715c3fd91385fc055334d3cec42ccd1
@@ -135,20 +135,20 @@ stages:
       size: 4941090
     - path: config/config.yaml
       hash: md5
-      md5: 18c5dd88bf4f9c850270cbe8dc91aa77
-      size: 1101
+      md5: d5ef9fb7dafdafc36a0066476f7e496d
+      size: 1338
     - path: src/components/model_experimentation.py
       hash: md5
-      md5: dfcdeb08b22154bf917d609e40c30a73
-      size: 18045
+      md5: 4fa60200278a9d11dcd43b5b1b2a1631
+      size: 27469
     - path: src/config/configuration.py
       hash: md5
-      md5: 7f14d156516dafce3ca6d1fe406b1d13
-      size: 4155
+      md5: 0fe2be647d85d9372a7322516a7a17f8
+      size: 5053
     - path: src/entity/config_entity.py
       hash: md5
-      md5: b6ef38973ba0990b038e108801890210
-      size: 1795
+      md5: aad22b469456cb5d1825424a23e81ef9
+      size: 2060
     - path: src/pipeline/stage_05_model_experimentation.py
       hash: md5
       md5: 00813ce97268c7da75c068a776d5c090
@@ -158,6 +158,10 @@ stages:
       hash: md5
       md5: 9a9fece242f5cb7221c751cc990c2135
       size: 308136
+    - path: artifacts/model_experimentation/model_experimentation.json
+      hash: md5
+      md5: df5778ecc839aafd0b652464ab52f91d
+      size: 241
   model_evaluation:
     cmd: python -m src.pipeline.stage_06_model_evaluation
     deps:
@@ -165,28 +169,63 @@ stages:
       hash: md5
       md5: 9a9fece242f5cb7221c751cc990c2135
       size: 308136
+    - path: artifacts/model_experimentation/model_experimentation.json
+      hash: md5
+      md5: df5778ecc839aafd0b652464ab52f91d
+      size: 241
     - path: config/config.yaml
       hash: md5
-      md5: 18c5dd88bf4f9c850270cbe8dc91aa77
-      size: 1101
+      md5: d5ef9fb7dafdafc36a0066476f7e496d
+      size: 1338
     - path: src/components/model_evaluation.py
       hash: md5
       md5: 19ca0fe63f8ac1b03c0c6b4468897302
       size: 3509
     - path: src/config/configuration.py
       hash: md5
-      md5: 7f14d156516dafce3ca6d1fe406b1d13
-      size: 4155
+      md5: 0fe2be647d85d9372a7322516a7a17f8
+      size: 5053
     - path: src/entity/config_entity.py
       hash: md5
-      md5: b6ef38973ba0990b038e108801890210
-      size: 1795
+      md5: aad22b469456cb5d1825424a23e81ef9
+      size: 2060
     - path: src/pipeline/stage_06_model_evaluation.py
       hash: md5
-      md5: bac486f30d3133c24afe6adca4cce37d
-      size: 2066
+      md5: db54265e5b92d2bfffae0452974a09df
+      size: 2394
     outs:
     - path: artifacts/model_evaluation/evaluation_metrics.json
       hash: md5
-      md5: 1d87fd3dab16e60925c4116d3079d19c
-      size: 90
+      md5: 238561ff85ec7ba629c9d28d91dacf72
+      size: 102
+  model_registry:
+    cmd: python -m src.pipeline.stage_07_model_registry
+    deps:
+    - path: artifacts/model_evaluation/evaluation_metrics.json
+      hash: md5
+      md5: 238561ff85ec7ba629c9d28d91dacf72
+      size: 102
+    - path: artifacts/model_experimentation/model_uri.txt
+      hash: md5
+      md5: b62dfe59411a0e16756023aad615d329
+      size: 50
+    - path: config/config.yaml
+      hash: md5
+      md5: d5ef9fb7dafdafc36a0066476f7e496d
+      size: 1338
+    - path: src/components/model_registry.py
+      hash: md5
+      md5: a357972ac6bb3d6859ee6ab0b0fb69b9
+      size: 5585
+    - path: src/config/configuration.py
+      hash: md5
+      md5: 0fe2be647d85d9372a7322516a7a17f8
+      size: 5053
+    - path: src/entity/config_entity.py
+      hash: md5
+      md5: aad22b469456cb5d1825424a23e81ef9
+      size: 2060
+    - path: src/pipeline/stage_07_model_registry.py
+      hash: md5
+      md5: 4e040973129531a1b95884fa2c899dbf
+      size: 2152

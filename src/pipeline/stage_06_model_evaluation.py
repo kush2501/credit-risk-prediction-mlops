@@ -1,13 +1,11 @@
 import sys
+import json
+from pathlib import Path
 
 from src.config.configuration import ConfigurationManager
-
 from src.components.model_evaluation import ModelEvaluation
-
 from src.entity.config_entity import ModelExperimentArtifact
-
 from src.exception.exception import CustomException
-
 from src.logger.logger import logger
 
 
@@ -28,23 +26,29 @@ if __name__ == "__main__":
         )
 
         # Recreate Model Experiment Artifact
-        model_experiment_artifact = (
-            ModelExperimentArtifact(
-                best_model_name="XGBoost",
-                best_model_f1_score=0.8334,
-                best_model_path=(
-                    "artifacts/model_experimentation/"
-                    "best_model.pkl"
-                ),
+        experiment_artifact_path = (
+            Path(
+                "artifacts/model_experimentation/"
+                "model_experimentation.json"
             )
+        )
+
+        with open(experiment_artifact_path, "r") as file:
+            experiment_data = json.load(file)
+
+        model_experiment_artifact = ModelExperimentArtifact(
+            best_model_name=experiment_data["best_model_name"],
+            best_model_f1_score=experiment_data["best_model_f1_score"],
+            best_model_path=Path(
+                experiment_data["best_model_path"]
+            ),
+            mlflow_model_uri=experiment_data["mlflow_model_uri"],
         )
 
         # Initialize Model Evaluation
         model_evaluation = ModelEvaluation(
             config=model_evaluation_config,
-            model_experiment_artifact=(
-                model_experiment_artifact
-            ),
+            model_experiment_artifact=model_experiment_artifact,
         )
 
         # Run Evaluation

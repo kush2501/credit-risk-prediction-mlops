@@ -30,3 +30,8 @@ model_experimentation:
   test_data_path: artifacts/data_transformation/test.csv
   best_model_path: artifacts/model_experimentation/best_model.pkl
 
+model_registry:
+  root_dir: artifacts/model_registry
+  model_name: CreditRiskModel
+  mlflow_model_uri_path: artifacts/model_experimentation/model_uri.txt
+  evaluation_metrics_path: artifacts/model_evaluation/evaluation_metrics.json
