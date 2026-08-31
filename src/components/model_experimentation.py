@@ -3,6 +3,8 @@ import sys
 import json 
 import mlflow
 import mlflow.xgboost
+import dagshub
+
 
 
 from sklearn.linear_model import LogisticRegression
@@ -646,13 +648,24 @@ class ModelExperimentation:
         """
         Run the complete model experimentation workflow,
         select the best model, log the final model to MLflow,
-        save it locally, and return the final experimentation artifact.
+        save it locally, log artifacts, and return the final
+        experimentation artifact.
         """
 
         try:
 
             logger.info(
                 "Model Experimentation Pipeline Started"
+            )
+
+            # ==========================================================
+            # Connect DagsHub with MLflow
+            # ==========================================================
+
+            dagshub.init(
+                repo_owner="kush2501",
+                repo_name="credit-risk-prediction-mlops",
+                mlflow=True,
             )
 
             mlflow.set_experiment(
@@ -742,25 +755,25 @@ class ModelExperimentation:
                     y_train,
                 )
 
-                # Log tuned XGBoost hyperparameters
+                # Log tuned XGBoost parameters
                 mlflow.log_params(
                     best_params
                 )
 
-                # Log cross-validation score
+                # Log cross-validation F1 score
                 mlflow.log_metric(
                     "cv_f1_score",
                     best_cv_score,
                 )
 
-                # Evaluate tuned XGBoost
+                # Evaluate tuned model
                 tuned_metrics = self.evaluate_tuned_model(
                     tuned_xgboost_model,
                     X_test,
                     y_test,
                 )
 
-                # Log tuned XGBoost test metrics
+                # Log test metrics
                 mlflow.log_metrics({
                     "accuracy": tuned_metrics["accuracy"],
                     "precision": tuned_metrics["precision"],
@@ -773,7 +786,7 @@ class ModelExperimentation:
                 )
 
             # ==========================================================
-            # Step 7: Compare all models
+            # Step 7: Compare all models and select final model
             # ==========================================================
 
             (
@@ -792,8 +805,13 @@ class ModelExperimentation:
                 f"{final_model_name}"
             )
 
+            logger.info(
+                f"Final F1-score: "
+                f"{final_metrics['f1_score']:.4f}"
+            )
+
             # ==========================================================
-            # Step 8: Create separate MLflow run for final model
+            # Step 8: Create Final Model MLflow Run
             # ==========================================================
 
             with mlflow.start_run(
@@ -804,10 +822,8 @@ class ModelExperimentation:
                     "Final model MLflow run started"
                 )
 
-                mlflow_model_uri = f"runs:/{final_run.info.run_id}/final_model"
-
                 # ------------------------------------------------------
-                # Log final model name
+                # 8.1 Log model name
                 # ------------------------------------------------------
 
                 mlflow.log_param(
@@ -816,7 +832,7 @@ class ModelExperimentation:
                 )
 
                 # ------------------------------------------------------
-                # Log final model parameters
+                # 8.2 Log model parameters
                 # ------------------------------------------------------
 
                 if final_model_name == "Logistic Regression":
@@ -845,7 +861,7 @@ class ModelExperimentation:
                     })
 
                 # ------------------------------------------------------
-                # Log final model metrics
+                # 8.3 Log final model metrics
                 # ------------------------------------------------------
 
                 mlflow.log_metrics({
@@ -856,12 +872,12 @@ class ModelExperimentation:
                 })
 
                 # ------------------------------------------------------
-                # Log final model using correct MLflow flavor
+                # 8.4 Log final trained model
                 # ------------------------------------------------------
 
                 if final_model_name == "XGBoost":
 
-                    mlflow.xgboost.log_model(
+                    logged_model = mlflow.xgboost.log_model(
                         xgb_model=final_model,
                         name="final_model",
                         model_format="json",
@@ -869,7 +885,7 @@ class ModelExperimentation:
 
                 else:
 
-                    mlflow.sklearn.log_model(
+                    logged_model = mlflow.sklearn.log_model(
                         sk_model=final_model,
                         name="final_model",
                     )
@@ -878,93 +894,163 @@ class ModelExperimentation:
                     "Final model logged to MLflow successfully"
                 )
 
+                # ------------------------------------------------------
+                # 8.5 Get MLflow 3.x Model URI
+                # ------------------------------------------------------
 
-            # Save MLflow model URI for the Model Registry stage
+                mlflow_model_uri = logged_model.model_uri
+
+                logger.info(
+                    f"MLflow model URI: "
+                    f"{mlflow_model_uri}"
+                )
+
+                # ======================================================
+                # Step 9: Save final model locally
+                # ======================================================
+
+                logger.info(
+                    "Saving final best model"
+                )
+
+                save_object(
+                    self.config.best_model_path,
+                    final_model,
+                )
+
+                logger.info(
+                    f"Best model saved at: "
+                    f"{self.config.best_model_path}"
+                )
+
+                # ======================================================
+                # Step 10: Save MLflow Model URI locally
+                # ======================================================
 
                 mlflow_uri_path = (
                     self.config.root_dir / "model_uri.txt"
                 )
 
-                with open(mlflow_uri_path, "w") as file:
-                    file.write(mlflow_model_uri)
+                with open(
+                    mlflow_uri_path,
+                    "w"
+                ) as file:
+
+                    file.write(
+                        mlflow_model_uri
+                    )
 
                 logger.info(
-                    f"MLflow model URI saved at: {mlflow_uri_path}"
+                    f"MLflow model URI saved at: "
+                    f"{mlflow_uri_path}"
                 )
 
-            # ==========================================================
-            # Step 9: Save final best model locally
-            # ==========================================================
+                # ======================================================
+                # Step 11: Create experimentation JSON artifact
+                # ======================================================
 
-            logger.info(
-                "Saving final best model"
-            )
-
-            save_object(
-                self.config.best_model_path,
-                final_model,
-            )
-
-            logger.info(
-                f"Best model saved at: "
-                f"{self.config.best_model_path}"
-            )
-
-            # ==========================================================
-            # Step 10: Create experimentation artifact
-            # ==========================================================
-
-            model_experiment_artifact = (
-                ModelExperimentArtifact(
-                    best_model_name=final_model_name,
-                    best_model_f1_score=final_metrics["f1_score"],
-                    best_model_path=self.config.best_model_path,
-                    mlflow_model_uri=mlflow_model_uri,
+                model_experiment_artifact = (
+                    ModelExperimentArtifact(
+                        best_model_name=final_model_name,
+                        best_model_f1_score=final_metrics["f1_score"],
+                        best_model_path=self.config.best_model_path,
+                        mlflow_model_uri=mlflow_model_uri,
                     )
-            )
-
-            experiment_artifact_path = (
-                self.config.root_dir / "model_experimentation.json"
-            )
-
-            with open(experiment_artifact_path, "w") as file:
-                json.dump(
-                    {
-                        "best_model_name": model_experiment_artifact.best_model_name,
-                        "best_model_f1_score": model_experiment_artifact.best_model_f1_score,
-                        "best_model_path": str(model_experiment_artifact.best_model_path),
-                        "mlflow_model_uri": model_experiment_artifact.mlflow_model_uri,
-                    },
-                    file,
-                    indent=4,
                 )
 
-            logger.info(
-                f"Model experimentation artifact saved at: "
-                f"{experiment_artifact_path}"
-            )
+                experiment_artifact_path = (
+                    self.config.root_dir
+                    / "model_experimentation.json"
+                )
 
-            logger.info(
-                "Model Experiment Artifact created successfully"
-            )
+                with open(
+                    experiment_artifact_path,
+                    "w"
+                ) as file:
 
-            logger.info(
-                "Model Experimentation Pipeline Completed"
-            )
+                    json.dump(
+                        {
+                            "best_model_name":
+                                model_experiment_artifact.best_model_name,
 
-            logger.info(
-                f"Best model: {final_model_name}"
-            )
+                            "best_model_f1_score":
+                                model_experiment_artifact.best_model_f1_score,
 
-            logger.info(
-                f"Best model F1-score: "
-                f"{final_metrics['f1_score']:.4f}"
-            )
+                            "best_model_path":
+                                str(
+                                    model_experiment_artifact.best_model_path
+                                ),
 
-            logger.info(
-                f"Best model saved at: "
-                f"{self.config.best_model_path}"
-            )
+                            "mlflow_model_uri":
+                                model_experiment_artifact.mlflow_model_uri,
+                        },
+                        file,
+                        indent=4,
+                    )
+
+                logger.info(
+                    f"Model experimentation artifact saved at: "
+                    f"{experiment_artifact_path}"
+                )
+
+                # ======================================================
+                # Step 12: Log local files to MLflow Run Artifacts
+                # ======================================================
+
+                # Save best_model.pkl inside:
+                # Final Model → Artifacts → model
+                mlflow.log_artifact(
+                    str(self.config.best_model_path),
+                    artifact_path="model",
+                )
+
+                # Save model_uri.txt inside:
+                # Final Model → Artifacts → metadata
+                mlflow.log_artifact(
+                    str(mlflow_uri_path),
+                    artifact_path="metadata",
+                )
+
+                # Save model_experimentation.json inside:
+                # Final Model → Artifacts → metadata
+                mlflow.log_artifact(
+                    str(experiment_artifact_path),
+                    artifact_path="metadata",
+                )
+
+                logger.info(
+                    "Final model artifacts logged to MLflow successfully"
+                )
+
+                # ======================================================
+                # Final logs
+                # ======================================================
+
+                logger.info(
+                    "Model Experiment Artifact created successfully"
+                )
+
+                logger.info(
+                    "Model Experimentation Pipeline Completed"
+                )
+
+                logger.info(
+                    f"Best model: {final_model_name}"
+                )
+
+                logger.info(
+                    f"Best model F1-score: "
+                    f"{final_metrics['f1_score']:.4f}"
+                )
+
+                logger.info(
+                    f"Best model saved at: "
+                    f"{self.config.best_model_path}"
+                )
+
+            # ==========================================================
+            # Return artifact after MLflow run is safely closed
+            # ==========================================================
 
             return model_experiment_artifact
 

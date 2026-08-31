@@ -2,6 +2,8 @@ from src.config.configuration import ConfigurationManager
 from src.components.model_registry import ModelRegistry
 from src.logger.logger import logger
 
+import dagshub
+
 
 STAGE_NAME = "Model Registry"
 
@@ -12,6 +14,12 @@ if __name__ == "__main__":
 
         logger.info(
             f">>>>>> Stage started: {STAGE_NAME} <<<<<<"
+        )
+
+        dagshub.init(
+            repo_owner="kush2501",
+            repo_name="credit-risk-prediction-mlops",
+            mlflow=True,
         )
 
         # Step 1: Create configuration manager
