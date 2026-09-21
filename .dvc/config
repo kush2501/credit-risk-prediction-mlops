@@ -1,6 +1,9 @@
 [core]
-    remote = dagshub
+    remote = dagshub-s3
 ['remote "origin"']
     url = s3://dvc
 ['remote "dagshub"']
     url = https://dagshub.com/kush2501/credit-risk-prediction-mlops.dvc
+['remote "dagshub-s3"']
+    url = s3://dvc
+    endpointurl = https://dagshub.com/kush2501/credit-risk-prediction-mlops.s3
