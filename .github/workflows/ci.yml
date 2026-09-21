@@ -20,13 +20,18 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements/ci.txt
 
-      - name: Pull DVC artifacts
+      - name: Configure DVC authentication
         env:
-          DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+        run: |
+          dvc remote modify dagshub user kush2501 --local
+          dvc remote modify dagshub password "$DAGSHUB_TOKEN" --local
+
+      - name: Pull DVC artifacts
         run: dvc pull
+
 
       - name: Run tests
         env:
           DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: pytest -v
-        
