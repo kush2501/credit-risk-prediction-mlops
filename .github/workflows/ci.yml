@@ -21,4 +21,6 @@ jobs:
         run: pip install -r requirements/ci.txt
 
       - name: Run tests
+        env:
+          DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: pytest -v
