@@ -27,6 +27,12 @@ jobs:
           dvc remote modify dagshub user kush2501 --local
           dvc remote modify dagshub password "$DAGSHUB_TOKEN" --local
 
+      - name: Check DagsHub identity
+        env:
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+        run: |
+          curl -u "kush2501:$DAGSHUB_TOKEN" https://dagshub.com/api/v1/user
+
       - name: Check DVC remote
         run: dvc status -c -v
 
