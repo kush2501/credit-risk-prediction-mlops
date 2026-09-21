@@ -4,4 +4,5 @@
 -r api.txt
 -r dev.txt
 dvc
+dvc-s3
 
