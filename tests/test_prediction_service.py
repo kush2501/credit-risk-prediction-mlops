@@ -70,11 +70,16 @@ def test_prediction_service():
     assert 0 <= probability[0][0] <= 1
     assert 0 <= probability[0][1] <= 1
 
-    # Test SHAP explanation
-    shap_values = prediction_service.explain(
-        customer_data
-    )
+   # Test customer-friendly SHAP explanation
+    explanations = prediction_service.explain(customer_data)
 
-    # SHAP checks
-    assert shap_values.values.shape == (1, 19)
-    assert shap_values.base_values.shape == (1,)
+    assert isinstance(explanations, list)
+    assert len(explanations) == 5
+
+    for explanation in explanations:
+        assert "feature" in explanation
+        assert "value" in explanation
+        assert "impact" in explanation
+        assert "importance" in explanation
+        assert explanation["importance"] >= 0
+    
