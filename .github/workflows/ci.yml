@@ -9,17 +9,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
+      # Download the project code from GitHub
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Install Python 3.11 for the CI environment
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
+      # Install all dependencies needed for testing
       - name: Install dependencies
         run: pip install -r requirements/ci.txt
 
+      # Configure DVC to access the DagsHub S3 remote
       - name: Configure DVC S3 authentication
         env:
           DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
@@ -27,34 +32,39 @@ jobs:
           dvc remote modify dagshub-s3 access_key_id "$DAGSHUB_TOKEN" --local
           dvc remote modify dagshub-s3 secret_access_key "$DAGSHUB_TOKEN" --local
 
+      # Check that a required DVC artifact exists in the remote
       - name: Check DVC object
         run: |
           curl -I \
             -u "kush2501:$DAGSHUB_TOKEN" \
             "https://dagshub.com/kush2501/credit-risk-prediction-mlops.dvc/files/md5/6c/a2272a24b34d679ffb76176562f182"
 
+      # Check that the DagsHub token is valid
       - name: Check DagsHub identity
         env:
           DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           curl -u "kush2501:$DAGSHUB_TOKEN" https://dagshub.com/api/v1/user
 
+      # Check whether local DVC files match the remote
       - name: Check DVC remote
         run: dvc status -c -v
 
+      # Download required DVC artifacts for the tests
       - name: Pull DVC artifacts
         run: dvc pull
 
-
+      # Run all Python tests
       - name: Run tests
         env:
           DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: pytest -v
 
-        # Build and smoke-test the Dockerized FastAPI application
+      # Build the Docker image for the FastAPI application
       - name: Build Docker image
         run: docker build -t credit-risk-api .
 
+      # Start the Docker container for testing
       - name: Run Docker container
         env:
           DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
@@ -65,11 +75,13 @@ jobs:
             -e DAGSHUB_USER_TOKEN="$DAGSHUB_USER_TOKEN" \
             credit-risk-api
 
+      # Check that the Dockerized API is healthy
       - name: Docker health check
         run: |
           sleep 20
           curl --fail http://localhost:8000/health
 
+      # Stop and remove the Docker container after the CI run
       - name: Stop Docker container
         if: always()
         run: docker rm -f credit-risk-container
