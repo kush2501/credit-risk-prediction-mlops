@@ -112,3 +112,66 @@ class CustomerPredictionResponse(BaseModel):
         le=1,
         description="Probability of default"
     )
+
+class PredictionExplanation(BaseModel):
+    feature: str
+    value: str
+    impact: Literal[
+        "increased_default_risk",
+        "decreased_default_risk"
+    ]
+    importance: float = Field(
+        ...,
+        ge=0,
+        description="Absolute SHAP contribution of the feature"
+    )
+
+class PredictionExplanation(BaseModel):
+    feature: str = Field(
+        ...,
+        description="Original customer feature that influenced the prediction"
+    )
+
+    value: str = Field(
+        ...,
+        description="Customer's value for this feature"
+    )
+
+    impact: Literal[
+        "increased_default_risk",
+        "decreased_default_risk",
+    ] = Field(
+        ...,
+        description="Direction of the feature's influence on default risk"
+    )
+
+    importance: float = Field(
+        ...,
+        ge=0,
+        description="Absolute SHAP contribution"
+    )
+
+class CustomerPredictionResponse(BaseModel):
+    prediction: int = Field(
+        ...,
+        description="Prediction: 0 = non-default, 1 = default"
+    )
+
+    non_default_probability: float = Field(
+        ...,
+        ge=0,
+        le=1,
+        description="Probability of non-default"
+    )
+
+    default_probability: float = Field(
+        ...,
+        ge=0,
+        le=1,
+        description="Probability of default"
+    )
+
+    explanations: list[PredictionExplanation] = Field(
+        ...,
+        description="Important features that influenced the prediction"
+    )

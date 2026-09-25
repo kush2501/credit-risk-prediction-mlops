@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environment
+venv/
+
+# Git
+.git/
+.github/
+
+# Development files
+notebooks/
+tests/
+
+# Logs
+logs/
+
+# DVC local cache
+.dvc/cache/
+
+# Environment files
+.env
+.env.*
+
+# IDE files
+.vscode/
+.idea/

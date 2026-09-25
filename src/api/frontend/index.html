@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Credit Risk Prediction</title>
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <!-- Header -->
+        <div class="header">
+            <h1>Credit Risk Prediction</h1>
+            <p>
+                Predict loan default risk using machine learning
+            </p>
+        </div>
+
+        <!-- Main Card -->
+        <div class="card">
+
+            <!-- Customer Information Section -->
+            <h2 id="customerInformation">
+                Customer Information
+            </h2>
+
+            <form id="predictionForm">
+
+                <div class="form-grid">
+
+                    <!-- Age -->
+                    <div class="form-group">
+                        <label for="person_age">Age</label>
+                        <input
+                            type="number"
+                            id="person_age"
+                            name="person_age"
+                            min="18"
+                            required
+                        >
+                    </div>
+
+                    <!-- Income -->
+                    <div class="form-group">
+                        <label for="person_income">
+                            Annual Income
+                        </label>
+
+                        <input
+                            type="number"
+                            id="person_income"
+                            name="person_income"
+                            min="1"
+                            required
+                        >
+                    </div>
+
+                    <!-- Home Ownership -->
+                    <div class="form-group">
+                        <label for="person_home_ownership">
+                            Home Ownership
+                        </label>
+
+                        <select
+                            id="person_home_ownership"
+                            name="person_home_ownership"
+                            required
+                        >
+                            <option value="">Select</option>
+                            <option value="MORTGAGE">
+                                MORTGAGE
+                            </option>
+                            <option value="OTHER">
+                                OTHER
+                            </option>
+                            <option value="OWN">
+                                OWN
+                            </option>
+                            <option value="RENT">
+                                RENT
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Employment -->
+                    <div class="form-group">
+                        <label for="person_emp_length">
+                            Employment Length
+                        </label>
+
+                        <input
+                            type="number"
+                            id="person_emp_length"
+                            name="person_emp_length"
+                            min="0"
+                            step="0.1"
+                            required
+                        >
+                    </div>
+
+                    <!-- Loan Intent -->
+                    <div class="form-group">
+                        <label for="loan_intent">
+                            Loan Purpose
+                        </label>
+
+                        <select
+                            id="loan_intent"
+                            name="loan_intent"
+                            required
+                        >
+                            <option value="">Select</option>
+
+                            <option value="DEBTCONSOLIDATION">
+                                Debt Consolidation
+                            </option>
+
+                            <option value="EDUCATION">
+                                Education
+                            </option>
+
+                            <option value="HOMEIMPROVEMENT">
+                                Home Improvement
+                            </option>
+
+                            <option value="MEDICAL">
+                                Medical
+                            </option>
+
+                            <option value="PERSONAL">
+                                Personal
+                            </option>
+
+                            <option value="VENTURE">
+                                Venture
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Loan Grade -->
+                    <div class="form-group">
+                        <label for="loan_grade">
+                            Loan Grade
+                        </label>
+
+                        <select
+                            id="loan_grade"
+                            name="loan_grade"
+                            required
+                        >
+                            <option value="">Select</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                            <option value="E">E</option>
+                            <option value="F">F</option>
+                            <option value="G">G</option>
+                        </select>
+                    </div>
+
+                    <!-- Loan Amount -->
+                    <div class="form-group">
+                        <label for="loan_amnt">
+                            Loan Amount
+                        </label>
+
+                        <input
+                            type="number"
+                            id="loan_amnt"
+                            name="loan_amnt"
+                            min="1"
+                            required
+                        >
+                    </div>
+
+                    <!-- Interest Rate -->
+                    <div class="form-group">
+                        <label for="loan_int_rate">
+                            Interest Rate (%)
+                        </label>
+
+                        <input
+                            type="number"
+                            id="loan_int_rate"
+                            name="loan_int_rate"
+                            min="0"
+                            step="0.01"
+                            required
+                        >
+                    </div>
+
+                    <!-- Loan / Income -->
+                    <div class="form-group">
+                        <label for="loan_percent_income">
+                            Loan-to-Income Ratio
+                        </label>
+
+                        <input
+                            type="number"
+                            id="loan_percent_income"
+                            name="loan_percent_income"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            required
+                        >
+                    </div>
+
+                    <!-- Previous Default -->
+                    <div class="form-group">
+                        <label for="cb_person_default_on_file">
+                            Previous Default History
+                        </label>
+
+                        <select
+                            id="cb_person_default_on_file"
+                            name="cb_person_default_on_file"
+                            required
+                        >
+                            <option value="">Select</option>
+                            <option value="N">No</option>
+                            <option value="Y">Yes</option>
+                        </select>
+                    </div>
+
+                    <!-- Credit History -->
+                    <div class="form-group">
+                        <label for="cb_person_cred_hist_length">
+                            Credit History Length
+                        </label>
+
+                        <input
+                            type="number"
+                            id="cb_person_cred_hist_length"
+                            name="cb_person_cred_hist_length"
+                            min="0"
+                            step="0.1"
+                            required
+                        >
+                    </div>
+
+                </div>
+
+                <button type="submit">
+                    Predict Credit Risk
+                </button>
+
+                <!-- Prediction Loading Message -->
+                <div id="loadingMessage" class="loading-message hidden">
+                    <span class="loading-spinner"></span>
+                    <span>Analyzing customer information...</span>
+                </div>    
+
+                <!-- Prediction Error Message -->
+                <div id="errorMessage" class="error-message hidden">
+                    Unable to get the prediction. Please try again.
+                </div>
+                        
+            </form>
+
+            <!-- Prediction Result -->
+            <div id="result" class="result hidden">
+
+                <h2>Prediction Result</h2>
+
+                <!-- Main Prediction -->
+                <div class="prediction-box">
+
+                    <p>Model Prediction</p>
+
+                    <h3 id="predictionText">-</h3>
+
+                    <span id="predictionDescription">
+                        Waiting for prediction...
+                    </span>
+
+                </div>
+
+                <!-- Probabilities -->
+               <div class="probability-grid">
+
+                    <div class="probability-card">
+
+                        <div class="probability-header">
+                            <p>Non-Default Probability</p>
+                            <strong id="nonDefaultProbability">-</strong>
+                        </div>
+
+                        <div class="probability-bar">
+                            <div
+                                id="nonDefaultBar"
+                                class="probability-fill non-default-fill"
+                            ></div>
+                        </div>
+
+                        <span class="probability-description">
+                            Estimated probability of non-default
+                        </span>
+
+                    </div>
+
+
+                    <div class="probability-card">
+
+                        <div class="probability-header">
+                            <p>Default Probability</p>
+                            <strong id="defaultProbability">-</strong>
+                        </div>
+
+                        <div class="probability-bar">
+                            <div
+                                id="defaultBar"
+                                class="probability-fill default-fill"
+                            ></div>
+                        </div>
+
+                        <span class="probability-description">
+                            Estimated probability of default
+                        </span>
+
+                    </div>
+
+                </div>
+
+                <!-- Explanation -->
+                <div class="explanation-section">
+
+                    <h3>
+                        What influenced this prediction?
+                    </h3>
+
+                    <p class="explanation-note">
+                        These factors influenced the model's prediction.
+                        They do not prove that a factor caused the outcome.
+                    </p>
+                
+                    <p class="importance-note">
+                        Longer bars indicate stronger influence on the model prediction.
+                    </p>
+
+                    <div id="explanations"></div>
+
+                </div>
+
+                <!-- New Prediction Button -->
+
+                <button
+                    type="button"
+                    id="newPredictionButton"
+                    class="new-prediction-button"
+                >
+                    Make Another Prediction
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="/static/script.js"></script>
+
+</body>
+
+</html>

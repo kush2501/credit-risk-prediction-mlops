@@ -15,6 +15,10 @@ from src.api.schemas import (
     CustomerPredictionResponse,
 )
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from pathlib import Path
+
 
 # --------------------------------------------------
 # DagsHub + MLflow
@@ -77,6 +81,18 @@ app = FastAPI(
     version="1.0.0",
 )
 
+FRONTEND_DIR = Path(__file__).parent / "frontend"
+
+app.mount(
+    "/static",
+    StaticFiles(directory=FRONTEND_DIR),
+    name="static",
+)
+
+@app.get("/", include_in_schema=False)
+def home():
+    return FileResponse(FRONTEND_DIR / "index.html")
+
 
 # --------------------------------------------------
 # Health Check
@@ -112,16 +128,16 @@ def predict(
             )
         )
 
-        return {
-            "prediction": int(prediction[0]),
-            "non_default_probability": float(
-                probability[0][0]
-            ),
-            "default_probability": float(
-                probability[0][1]
-            ),
-        }
+        explanations = prediction_service.explain(
+            customer_data
+        )
 
+        return CustomerPredictionResponse(
+            prediction=int(prediction[0]),
+            non_default_probability=float(probability[0][0]),
+            default_probability=float(probability[0][1]),
+            explanations=explanations,
+        )
     except Exception as e:
         logger.error(
             f"Prediction failed: {e}"
