@@ -50,3 +50,26 @@ jobs:
         env:
           DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: pytest -v
+
+        # Build and smoke-test the Dockerized FastAPI application
+      - name: Build Docker image
+        run: docker build -t credit-risk-api .
+
+      - name: Run Docker container
+        env:
+          DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+        run: |
+          docker run -d \
+            --name credit-risk-container \
+            -p 8000:8000 \
+            -e DAGSHUB_USER_TOKEN="$DAGSHUB_USER_TOKEN" \
+            credit-risk-api
+
+      - name: Docker health check
+        run: |
+          sleep 20
+          curl --fail http://localhost:8000/health
+
+      - name: Stop Docker container
+        if: always()
+        run: docker rm -f credit-risk-container
