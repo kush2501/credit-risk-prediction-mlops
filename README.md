@@ -49,7 +49,7 @@ Docker
 GitHub Actions
      ↓
 AWS Deployment Architecture
-
+```
 
 ### Project Architecture
 
